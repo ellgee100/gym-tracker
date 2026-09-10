@@ -688,27 +688,109 @@ function editNote(exerciseId) {
 }
 
 function showAddExercise() {
-  const names = Object.values(data.exercises)
+  const exercises = Object.values(data.exercises)
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const existingNames = names
-    .map((exercise, index) => `${index + 1}. ${exercise.name}`)
-    .join("\\n");
+  const modal = document.createElement("div");
 
-  const answer = prompt(
-    "Type the exercise name.\\n\\nExisting exercises:\\n" +
-    existingNames
-  );
+  modal.style.position = "fixed";
+  modal.style.inset = "0";
+  modal.style.background = "rgba(0,0,0,.45)";
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.padding = "20px";
+  modal.style.zIndex = "1000";
 
-  if (!answer) return;
+  modal.innerHTML = `
+    <div style="
+      background:white;
+      width:100%;
+      max-width:480px;
+      max-height:80vh;
+      overflow:auto;
+      border-radius:16px;
+      padding:18px;
+    ">
+      <div class="row space-between">
+        <h2 style="margin:0">Add exercise</h2>
 
-  const normalized = answer.trim().toLowerCase();
+        <button
+          class="delete-button"
+          id="closeExerciseModal"
+        >
+          ×
+        </button>
+      </div>
 
-  let exercise = Object.values(data.exercises).find(
-    ex => ex.name.toLowerCase() === normalized
-  );
+      <div class="muted" style="margin:8px 0 14px">
+        Choose an existing exercise so its history and notes stay linked.
+      </div>
 
-  if (!exercise) {
+      <div id="existingExerciseList"></div>
+
+      <button
+        class="add-button"
+        id="createNewExercise"
+        style="margin-top:16px"
+      >
+        + Create new exercise
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const list = modal.querySelector("#existingExerciseList");
+
+  exercises.forEach(exercise => {
+    const button = document.createElement("button");
+
+    button.className = "big-button";
+    button.style.width = "100%";
+    button.style.minHeight = "58px";
+    button.style.marginBottom = "10px";
+    button.style.textAlign = "left";
+
+    button.textContent = exercise.name;
+
+    button.onclick = () => {
+      currentWorkout.exercises.push({
+        exerciseId: exercise.id,
+        sets: [
+          { weight: "", reps: "" }
+        ]
+      });
+
+      modal.remove();
+      renderExercises();
+    };
+
+    list.appendChild(button);
+  });
+
+  modal.querySelector("#closeExerciseModal").onclick = () => {
+    modal.remove();
+  };
+
+  modal.querySelector("#createNewExercise").onclick = () => {
+    const answer = prompt("New exercise name:");
+
+    if (!answer || !answer.trim()) return;
+
+    const normalized = answer.trim().toLowerCase();
+
+    const existing = Object.values(data.exercises).find(
+      ex => ex.name.toLowerCase() === normalized
+    );
+
+    if (existing) {
+      alert(
+        `"${existing.name}" already exists. Please select it from the list.`
+      );
+      return;
+    }
+
     const id =
       answer
         .trim()
@@ -718,7 +800,7 @@ function showAddExercise() {
       "-" +
       Date.now();
 
-    exercise = {
+    const exercise = {
       id,
       name: answer.trim(),
       note: ""
@@ -726,18 +808,18 @@ function showAddExercise() {
 
     data.exercises[id] = exercise;
     saveData();
-  }
 
-  currentWorkout.exercises.push({
-    exerciseId: exercise.id,
-    sets: [
-      { weight: "", reps: "" }
-    ]
-  });
+    currentWorkout.exercises.push({
+      exerciseId: exercise.id,
+      sets: [
+        { weight: "", reps: "" }
+      ]
+    });
 
-  renderExercises();
+    modal.remove();
+    renderExercises();
+  };
 }
-
 function validateWorkout() {
   const problems = [];
 
