@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+
+  <title>Gym Tracker</title>
+
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --primary: #111827;
+      --good: #166534;
+      --good-bg: #dcfce7;
+      --danger: #b91c1c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      max-width: 720px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 20px 16px 60px;
+    }
+
+    h1 {
+      font-size: 30px;
+      margin: 8px 0 4px;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .big-button {
+      min-height: 90px;
+      border: 0;
+      border-radius: 16px;
+      background: var(--card);
+      padding: 16px;
+      font-weight: 700;
+      font-size: 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+
+    .big-button.primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .section {
+      margin-top: 28px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .space-between {
+      justify-content: space-between;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .exercise-title {
+      font-size: 19px;
+      font-weight: 700;
+    }
+
+    .note {
+      margin-top: 8px;
+      color: #374151;
+      font-size: 14px;
+      background: #f9fafb;
+      padding: 9px 10px;
+      border-radius: 10px;
+    }
+
+    .set-row {
+      display: grid;
+      grid-template-columns: 40px 1fr 1fr 42px;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px;
+      background: white;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    .small-button {
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 10px;
+      padding: 9px 12px;
+    }
+
+    .add-button {
+      width: 100%;
+      margin-top: 12px;
+      border: 1px dashed #9ca3af;
+      background: transparent;
+      border-radius: 12px;
+      padding: 12px;
+      font-weight: 600;
+    }
+
+    .delete-button {
+      border: 0;
+      background: transparent;
+      color: var(--danger);
+      font-size: 18px;
+    }
+
+    .finish {
+      width: 100%;
+      border: 0;
+      border-radius: 14px;
+      padding: 16px;
+      font-weight: 700;
+      font-size: 17px;
+      background: var(--primary);
+      color: white;
+      margin-top: 20px;
+    }
+
+    .success {
+      background: var(--good-bg);
+      color: var(--good);
+      padding: 10px 12px;
+      border-radius: 10px;
+      margin-top: 10px;
+      font-weight: 600;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .back {
+      border: 0;
+      background: transparent;
+      padding: 0;
+      margin-bottom: 16px;
+      color: #374151;
+    }
+
+    .history-item {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .history-item:last-child {
+      border-bottom: 0;
+    }
+
+    .pill {
+      display: inline-block;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+
+    @media (max-width: 500px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div id="app" class="app"></div>
+
+<script>
+/*
+  Gym Tracker
+  Data version: 1
+
+  Your workout data is stored separately from this app's code
+  in the browser's local storage.
+
+  Updating index.html later will NOT normally delete your data.
+*/
+
+const DATA_VERSION = 1;
+
+const defaultData = {
+  version: DATA_VERSION,
+
+  exercises: {
+    "leg-press": {
+      id: "leg-press",
+      name: "Leg Press",
+      note: ""
+    },
+    "split-squat": {
+      id: "split-squat",
+      name: "Bulgarian Split Squat",
+      note: ""
+    },
+    "leg-curl": {
+      id: "leg-curl",
+      name: "Leg Curl",
+      note: ""
+    },
+    "calf-raise": {
+      id: "calf-raise",
+      name: "Calf Raise",
+      note: ""
+    },
+    "cable-row": {
+      id: "cable-row",
+      name: "Cable Row",
+      note: ""
+    },
+    "lat-pulldown": {
+      id: "lat-pulldown",
+      name: "Lat Pulldown",
+      note: ""
+    },
+    "chest-press": {
+      id: "chest-press",
+      name: "Chest Press",
+      note: ""
+    },
+    "biceps-curl": {
+      id: "biceps-curl",
+      name: "Biceps Curl",
+      note: ""
+    }
+  },
+
+  templates: {
+    upperA: {
+      id: "upperA",
+      name: "Upper A",
+      exercises: ["chest-press", "lat-pulldown", "cable-row", "biceps-curl"]
+    },
+
+    upperB: {
+      id: "upperB",
+      name: "Upper B",
+      exercises: ["lat-pulldown", "chest-press", "cable-row"]
+    },
+
+    legs: {
+      id: "legs",
+      name: "Legs",
+      exercises: ["leg-press", "split-squat", "leg-curl", "calf-raise"]
+    }
+  },
+
+  workouts: []
+};
+
+let data = loadData();
+let currentWorkout = null;
+
+function loadData() {
+  const saved = localStorage.getItem("gymTrackerData");
+
+  if (!saved) {
+    return structuredClone(defaultData);
+  }
+
+  try {
+    return JSON.parse(saved);
+  } catch {
+    return structuredClone(defaultData);
+  }
+}
+
+function saveData() {
+  localStorage.setItem("gymTrackerData", JSON.stringify(data));
+}
+
+function todayString() {
+  const today = new Date();
+  return today.toISOString().slice(0, 10);
+}
+
+function uid() {
+  return crypto.randomUUID
+    ? crypto.randomUUID()
+    : Date.now().toString() + Math.random().toString(16).slice(2);
+}
+
+function escapeHTML(text = "") {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function getExercise(id) {
+  return data.exercises[id];
+}
+
+function latestSets(exerciseId) {
+  const relevant = [...data.workouts]
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .find(workout =>
+      workout.exercises.some(ex => ex.exerciseId === exerciseId)
+    );
+
+  if (!relevant) return null;
+
+  return relevant.exercises.find(
+    ex => ex.exerciseId === exerciseId
+  )?.sets || null;
+}
+
+function bestRepsAtWeight(exerciseId, weight) {
+  let best = null;
+
+  for (const workout of data.workouts) {
+    for (const exercise of workout.exercises) {
+      if (exercise.exerciseId !== exerciseId) continue;
+
+      for (const set of exercise.sets) {
+        if (Number(set.weight) === Number(weight)) {
+          best = Math.max(best ?? 0, Number(set.reps));
+        }
+      }
+    }
+  }
+
+  return best;
+}
+
+function renderHome() {
+  currentWorkout = null;
+
+  document.getElementById("app").innerHTML = `
+    <h1>Gym Tracker</h1>
+    <div class="subtitle">Train consistently. Track clean progress.</div>
+
+    <div class="grid">
+      <button class="big-button primary" onclick="startTemplate('upperA')">
+        Upper A
+      </button>
+
+      <button class="big-button primary" onclick="startTemplate('upperB')">
+        Upper B
+      </button>
+
+      <button class="big-button primary" onclick="startTemplate('legs')">
+        Legs
+      </button>
+
+      <button class="big-button" onclick="startCustom()">
+        Custom Workout
+      </button>
+
+      <button class="big-button" onclick="startPastWorkout()">
+        Log Past Workout
+      </button>
+
+      <button class="big-button" onclick="renderHistory()">
+        History & Progress
+      </button>
+    </div>
+
+    <div class="section">
+      <button class="big-button" style="width:100%" onclick="exportCSV()">
+        Export for ChatGPT
+      </button>
+    </div>
+  `;
+}
+
+function createWorkout(name, templateId = null, date = todayString()) {
+  return {
+    id: uid(),
+    name,
+    templateId,
+    date,
+    createdAt: new Date().toISOString(),
+    exercises: []
+  };
+}
+
+function startTemplate(templateId) {
+  const template = data.templates[templateId];
+
+  currentWorkout = createWorkout(template.name, templateId);
+
+  currentWorkout.exercises = template.exercises.map(exerciseId => ({
+    exerciseId,
+    sets: [
+      { weight: "", reps: "" }
+    ]
+  }));
+
+  renderWorkout();
+}
+
+function startCustom() {
+  currentWorkout = createWorkout("Custom Workout");
+  renderWorkout();
+}
+
+function startPastWorkout() {
+  currentWorkout = createWorkout("Past Workout", null, todayString());
+  renderWorkout(true);
+}
+
+function renderWorkout(isPast = false) {
+  const app = document.getElementById("app");
+
+  app.innerHTML = `
+    <button class="back" onclick="confirmExit()">← Back</button>
+
+    <div class="row space-between">
+      <div>
+        <h2 style="margin-bottom:4px">
+          ${escapeHTML(currentWorkout.name)}
+        </h2>
+
+        <div class="muted">
+          Standard effort: approximately 1 rep in reserve
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <label class="muted">Workout date</label>
+      <input
+        type="date"
+        value="${currentWorkout.date}"
+        onchange="currentWorkout.date=this.value"
+      >
+    </div>
+
+    <div id="exerciseList"></div>
+
+    <button class="add-button" onclick="showAddExercise()">
+      + Add exercise
+    </button>
+
+    <button class="finish" onclick="finishWorkout()">
+      Finish workout
+    </button>
+  `;
+
+  renderExercises();
+}
+
+function renderExercises() {
+  const list = document.getElementById("exerciseList");
+
+  list.innerHTML = currentWorkout.exercises.map((entry, exerciseIndex) => {
+    const exercise = getExercise(entry.exerciseId);
+    const last = latestSets(entry.exerciseId);
+
+    const lastText = last
+      ? last.map(set => `${set.weight} kg × ${set.reps}`).join(" · ")
+      : "No previous data";
+
+    return `
+      <div class="card">
+
+        <div class="row space-between">
+          <div>
+            <div class="exercise-title">
+              ${escapeHTML(exercise.name)}
+            </div>
+
+            <div class="muted" style="margin-top:4px">
+              Last time: ${escapeHTML(lastText)}
+            </div>
+          </div>
+
+          <button
+            class="delete-button"
+            onclick="removeExercise(${exerciseIndex})"
+            title="Remove exercise from this workout"
+          >
+            ×
+          </button>
+        </div>
+
+        <div class="note">
+          <strong>Note:</strong>
+          <span id="note-display-${exercise.id}">
+            ${
+              exercise.note
+                ? escapeHTML(exercise.note)
+                : "No persistent note yet."
+            }
+          </span>
+
+          <button
+            class="small-button"
+            style="margin-left:8px"
+            onclick="editNote('${exercise.id}')"
+          >
+            Edit
+          </button>
+        </div>
+
+        <div style="margin-top:14px">
+          <div class="set-row muted">
+            <div>Set</div>
+            <div>Weight kg</div>
+            <div>Reps</div>
+            <div></div>
+          </div>
+
+          ${entry.sets.map((set, setIndex) => `
+            <div class="set-row">
+              <div>${setIndex + 1}</div>
+
+              <input
+                inputmode="decimal"
+                placeholder="kg"
+                value="${set.weight}"
+                onchange="
+                  updateSet(
+                    ${exerciseIndex},
+                    ${setIndex},
+                    'weight',
+                    this.value
+                  )
+                "
+              >
+
+              <input
+                inputmode="numeric"
+                placeholder="reps"
+                value="${set.reps}"
+                onchange="
+                  updateSet(
+                    ${exerciseIndex},
+                    ${setIndex},
+                    'reps',
+                    this.value
+                  )
+                "
+              >
+
+              <button
+                class="delete-button"
+                onclick="removeSet(${exerciseIndex}, ${setIndex})"
+              >
+                ×
+              </button>
+            </div>
+
+            ${
+              set.weight && set.reps &&
+              bestRepsAtWeight(entry.exerciseId, set.weight) !== null &&
+              Number(set.reps) >
+                bestRepsAtWeight(entry.exerciseId, set.weight)
+                ? `
+                  <div class="success">
+                    New rep PR at ${set.weight} kg
+                  </div>
+                `
+                : ""
+            }
+          `).join("")}
+
+          <button
+            class="add-button"
+            onclick="addSet(${exerciseIndex})"
+          >
+            + Add set
+          </button>
+        </div>
+
+      </div>
+    `;
+  }).join("");
+}
+
+function updateSet(exerciseIndex, setIndex, field, value) {
+  currentWorkout.exercises[exerciseIndex].sets[setIndex][field] = value;
+}
+
+function addSet(exerciseIndex) {
+  const exerciseEntry = currentWorkout.exercises[exerciseIndex];
+  const previous = exerciseEntry.sets.at(-1);
+
+  exerciseEntry.sets.push({
+    weight: previous?.weight || "",
+    reps: ""
+  });
+
+  renderExercises();
+}
+
+function removeSet(exerciseIndex, setIndex) {
+  currentWorkout.exercises[exerciseIndex].sets.splice(setIndex, 1);
+
+  if (currentWorkout.exercises[exerciseIndex].sets.length === 0) {
+    currentWorkout.exercises[exerciseIndex].sets.push({
+      weight: "",
+      reps: ""
+    });
+  }
+
+  renderExercises();
+}
+
+function removeExercise(index) {
+  currentWorkout.exercises.splice(index, 1);
+  renderExercises();
+}
+
+function editNote(exerciseId) {
+  const exercise = getExercise(exerciseId);
+
+  const newNote = prompt(
+    "Persistent note for " + exercise.name,
+    exercise.note || ""
+  );
+
+  if (newNote === null) return;
+
+  exercise.note = newNote.trim();
+  saveData();
+  renderExercises();
+}
+
+function showAddExercise() {
+  const names = Object.values(data.exercises)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const existingNames = names
+    .map((exercise, index) => `${index + 1}. ${exercise.name}`)
+    .join("\\n");
+
+  const answer = prompt(
+    "Type the exercise name.\\n\\nExisting exercises:\\n" +
+    existingNames
+  );
+
+  if (!answer) return;
+
+  const normalized = answer.trim().toLowerCase();
+
+  let exercise = Object.values(data.exercises).find(
+    ex => ex.name.toLowerCase() === normalized
+  );
+
+  if (!exercise) {
+    const id =
+      answer
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") +
+      "-" +
+      Date.now();
+
+    exercise = {
+      id,
+      name: answer.trim(),
+      note: ""
+    };
+
+    data.exercises[id] = exercise;
+    saveData();
+  }
+
+  currentWorkout.exercises.push({
+    exerciseId: exercise.id,
+    sets: [
+      { weight: "", reps: "" }
+    ]
+  });
+
+  renderExercises();
+}
+
+function validateWorkout() {
+  const problems = [];
+
+  currentWorkout.exercises.forEach(entry => {
+    const exercise = getExercise(entry.exerciseId);
+
+    entry.sets.forEach((set, index) => {
+      const weightMissing = String(set.weight).trim() === "";
+      const repsMissing = String(set.reps).trim() === "";
+
+      if (weightMissing || repsMissing) {
+        problems.push(
+          `${exercise.name}, set ${index + 1}`
+        );
+      }
+    });
+  });
+
+  return problems;
+}
+
+function finishWorkout() {
+  if (currentWorkout.exercises.length === 0) {
+    alert("Add at least one exercise before saving.");
+    return;
+  }
+
+  const problems = validateWorkout();
+
+  if (problems.length > 0) {
+    alert(
+      "This workout has incomplete sets.\\n\\n" +
+      problems.join("\\n") +
+      "\\n\\nAdd the missing weight/reps or delete the set before finishing."
+    );
+    return;
+  }
+
+  data.workouts.push(currentWorkout);
+  saveData();
+
+  const summary = getWorkoutSummary(currentWorkout);
+
+  document.getElementById("app").innerHTML = `
+    <h1>Workout complete</h1>
+
+    <div class="card">
+      <strong>
+        ${escapeHTML(currentWorkout.name)}
+      </strong>
+
+      <div class="muted" style="margin-top:5px">
+        ${escapeHTML(currentWorkout.date)}
+      </div>
+    </div>
+
+    ${
+      summary.length
+        ? `
+          <div class="card">
+            <h2>Progress</h2>
+            ${summary.map(item =>
+              `<div class="success">${escapeHTML(item)}</div>`
+            ).join("")}
+          </div>
+        `
+        : `
+          <div class="card">
+            Workout saved.
+          </div>
+        `
+    }
+
+    <button class="finish" onclick="renderHome()">
+      Done
+    </button>
+  `;
+}
+
+function getWorkoutSummary(workout) {
+  const messages = [];
+
+  for (const entry of workout.exercises) {
+    const exercise = getExercise(entry.exerciseId);
+
+    for (const set of entry.sets) {
+      let previousBest = null;
+
+      for (const oldWorkout of data.workouts) {
+        if (oldWorkout.id === workout.id) continue;
+
+        for (const oldExercise of oldWorkout.exercises) {
+          if (oldExercise.exerciseId !== entry.exerciseId) continue;
+
+          for (const oldSet of oldExercise.sets) {
+            if (Number(oldSet.weight) === Number(set.weight)) {
+              previousBest = Math.max(
+                previousBest ?? 0,
+                Number(oldSet.reps)
+              );
+            }
+          }
+        }
+      }
+
+      if (
+        previousBest !== null &&
+        Number(set.reps) > previousBest
+      ) {
+        messages.push(
+          `${exercise.name}: ${set.weight} kg × ${set.reps} — new rep PR`
+        );
+      }
+    }
+  }
+
+  return [...new Set(messages)];
+}
+
+function renderHistory() {
+  const workouts = [...data.workouts]
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  document.getElementById("app").innerHTML = `
+    <button class="back" onclick="renderHome()">← Back</button>
+
+    <h1>History</h1>
+
+    <div class="subtitle">
+      ${workouts.length} saved workout${workouts.length === 1 ? "" : "s"}
+    </div>
+
+    ${
+      workouts.length
+        ? workouts.map(workout => `
+          <div class="card">
+            <div class="row space-between">
+              <strong>${escapeHTML(workout.name)}</strong>
+              <span class="pill">${escapeHTML(workout.date)}</span>
+            </div>
+
+            ${workout.exercises.map(entry => {
+              const exercise = getExercise(entry.exerciseId);
+
+              return `
+                <div class="history-item">
+                  <strong>${escapeHTML(exercise.name)}</strong>
+
+                  <div class="muted">
+                    ${
+                      entry.sets
+                        .map(set => `${set.weight} kg × ${set.reps}`)
+                        .join(" · ")
+                    }
+                  </div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        `).join("")
+        : `
+          <div class="card">
+            No workouts logged yet.
+          </div>
+        `
+    }
+  `;
+}
+
+function exportCSV() {
+  const rows = [
+    [
+      "date",
+      "workout",
+      "exercise_order",
+      "exercise",
+      "set",
+      "weight_kg",
+      "reps",
+      "assumed_RIR"
+    ]
+  ];
+
+  const workouts = [...data.workouts]
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  workouts.forEach(workout => {
+    workout.exercises.forEach((entry, exerciseIndex) => {
+      const exercise = getExercise(entry.exerciseId);
+
+      entry.sets.forEach((set, setIndex) => {
+        rows.push([
+          workout.date,
+          workout.name,
+          exerciseIndex + 1,
+          exercise.name,
+          setIndex + 1,
+          set.weight,
+          set.reps,
+          1
+        ]);
+      });
+    });
+  });
+
+  const csv = rows
+    .map(row =>
+      row
+        .map(value =>
+          `"${String(value).replaceAll('"', '""')}"`
+        )
+        .join(",")
+    )
+    .join("\\n");
+
+  const blob = new Blob([csv], {
+    type: "text/csv;charset=utf-8"
+  });
+
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "gym-training-data.csv";
+  link.click();
+
+  URL.revokeObjectURL(url);
+}
+
+function confirmExit() {
+  if (
+    confirm(
+      "Leave this workout? Unsaved changes will be lost."
+    )
+  ) {
+    renderHome();
+  }
+}
+
+renderHome();
+</script>
+</body>
+</html>
